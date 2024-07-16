@@ -11,28 +11,30 @@ class ZypherChroniclesApp:
         self.public_key = self.key.publickey()
         self.information_store = {}
 
+    # thus is to store files in the server securely
     def store_file(self, file, key):
         if file is None:
-            return "Error: No file uploaded."
+            return "Error: No file is being uploaded."
         if not key:
-            return "Error: Key must be provided."
-
+            return "Error: Key must be provided to continue."
         try:
             # Read the content of the file
-            print(file)
             content = file.read()
             if isinstance(content, str):
                 content = content.encode()
 
-            # Encrypt the content
+            # Encrypt the content in chunks due to RSA size limitations
             cipher = PKCS1_OAEP.new(self.public_key)
-            encrypted = cipher.encrypt(content)
+            chunk_size = 190  # Maximum size for 2048-bit key
+            encrypted = b""
+            for i in range(0, len(content), chunk_size):
+                chunk = content[i : i + chunk_size]
+                encrypted += cipher.encrypt(chunk)
 
             # Save the encrypted content
             filename = f"{key}_encrypted.bin"
             with open(filename, "wb") as f:
                 f.write(encrypted)
-
             return f"File encrypted and stored as {filename}"
         except Exception as e:
             return f"Error occurred: {str(e)}"
